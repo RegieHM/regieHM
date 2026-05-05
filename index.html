@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Catalogue Régie — Interface 3 panneaux</title>
+<style>
+    /* ===========================
+       Variables de thème
+       =========================== */
+    :root{
+      --bg1:#f5f7fb;
+      --bg2:#ffffff;
+      --panneau:#ffffff;
+      --bordure:#e5e7eb;
+      --texte:#0f172a;
+      --atténué:#64748b;
+      --bleu:#2563eb;
+      --bleu-50:#eff6ff;
+      --kaki:#9db596;          /* kaki doux (bandeau bas) */
+      --rayon:16px;
+      --ombre:0 6px 20px rgba(0,0,0,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--texte);
+      background:linear-gradient(180deg,var(--bg1),#eef2ff 400px) fixed;
+      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    .masqué{display:none !important}
+
+    /* ===========================
+       Animations (fade)
+       =========================== */
+    @keyframes fondu {
+      from { opacity:0; transform:translateY(6px) }
+      to   { opacity:1; transform:none }
+    }
+    .anime-fondu { animation: fondu .24s ease-out both }
+
+    /* ===========================
+       En-tête (collant)
+       =========================== */
+    header[role="banner"]{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:saturate(140%) blur(6px);
+      background:color-mix(in oklab, var(--bg2) 80%, transparent);
+      border-bottom:1px solid var(--bordure);
+    }
+    .entete-interne{
+      max-width:1200px; margin:0 auto; padding:12px 16px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+    }
+    .marque{font-weight:700; letter-spacing:.2px}
+    .marque b{color:var(--bleu)}
+    .indice{color:var(--atténué); font-size:12px}
+
+    /* ===========================
+       Grille principale
+       =========================== */
+    .grille{
+      max-width:1200px; margin:16px auto; padding:0 16px 16px;
+      display:grid; gap:16px;
+      grid-template-columns:260px minmax(0,1fr) 380px;
+    }
+    @media (max-width: 980px){
+      .grille{grid-template-columns:1fr}
+    }
+    .panneau{
+      background:var(--panneau); border:1px solid var(--bordure);
+      border-radius:var(--rayon); box-shadow:var(--ombre);
+    }
+
+    /* ===========================
+       Rubriques (gauche)
+       =========================== */
+    nav[aria-label="Rubriques"]{padding:12px}
+    .rubriques{
+      display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none;
+    }
+    .bouton-rubrique{
+      appearance:none; border:1px solid var(--bordure); background:var(--bg2);
+      padding:10px 12px; border-radius:12px; text-align:left; cursor:pointer;
+      display:flex; align-items:center; gap:10px; font-weight:600; color:var(--texte);
+    }
+    .bouton-rubrique:hover{border-color:color-mix(in oklab, var(--bordure), var(--bleu) 20%)}
+    .bouton-rubrique[aria-current="page"]{
+      background:var(--bleu-50); border-color:color-mix(in oklab, var(--bleu) 30%, var(--bordure));
+      outline:2px solid color-mix(in oklab, var(--bleu) 25%, transparent);
+    }
+    .emoji-rubrique{width:22px; text-align:center}
+
+    /* ===========================
+       Liste au centre
+       =========================== */
+    .centre{padding:12px}
+    .cartes{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+    @media (max-width: 1200px){ .cartes{grid-template-columns:1fr} }
+
+    .carte{
+      appearance:none; border:1px solid var(--bordure); background:var(--bg2);
+      border-radius:12px; padding:12px; text-align:left; cursor:pointer;
+      display:block; width:100%;
+    }
+    .carte:hover{border-color:color-mix(in oklab, var(--bordure), var(--bleu) 25%)}
+    .carte:focus-visible{outline:2px solid var(--bleu); outline-offset:2px}
+    .carte[aria-pressed="true"]{
+      background:var(--bleu-50);
+      border-color:color-mix(in oklab, var(--bleu) 30%, var(--bordure));
+      box-shadow:0 0 0 3px color-mix(in oklab, var(--bleu) 20%, transparent) inset;
+    }
+    .ligne-carte{display:flex; gap:12px}
+    .avatar{
+      width:38px; height:38px; border-radius:10px; flex:0 0 auto;
+      display:grid; place-items:center; font-weight:800;
+      color:var(--bleu); background:color-mix(in oklab, white 70%, var(--bleu));
+      border:1px solid color-mix(in oklab, var(--bleu) 35%, white);
+    }
+    .grandit{min-width:0}
+    .titre{margin:0 0 2px; font-size:15px}
+    .soustitre{color:var(--atténué); font-size:12px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .etiquettes{display:flex; flex-wrap:wrap; gap:6px}
+    .etiquette{
+      font-size:11px; padding:3px 8px; border-radius:999px;
+      background:#f1f5f9; color:#0f172a; border:1px solid var(--bordure)
+    }
+    .etiquette.bleue{background:var(--bleu-50); color:#0b2b7a; border-color:color-mix(in oklab, var(--bleu) 25%, var(--bordure))}
+
+    /* ===========================
+       Détail (droite)
+       =========================== */
+    .panneau-detail{padding:14px}
+    .attente{
+      color:var(--atténué); font-size:14px; padding:28px;
+      border:2px dashed var(--bordure); border-radius:12px; background:#fafafa;
+      text-align:center;
+    }
+    .detail h2{margin:0 0 6px}
+    .detail .sous{color:var(--atténué); margin:0 0 12px}
+    .pastille{
+      display:inline-block; font-size:11px; padding:4px 8px; border-radius:999px;
+      background:#f1f5f9; border:1px solid var(--bordure); margin-right:6px; margin-bottom:6px;
+    }
+    .caracts{
+      width:100%; border-collapse:separate; border-spacing:0; margin:12px 0; font-size:13px;
+      border:1px solid var(--bordure); border-radius:10px; overflow:hidden;
+    }
+    .caracts th,.caracts td{padding:8px 10px; text-align:left; vertical-align:top; background:#fff}
+    .caracts th{width:160px; color:#0b2b7a; background:var(--bleu-50); font-weight:700; border-right:1px solid var(--bordure)}
+    .caracts tr+tr th, .caracts tr+tr td{border-top:1px solid var(--bordure)}
+    .notes{background:#fff7ed; border:1px solid #fed7aa; color:#7c2d12; padding:10px 12px; border-radius:10px}
+    .description{margin:10px 0 0; color:#111827}
+
+    /* ===========================
+       Pied de page (kaki)
+       =========================== */
+    footer{
+      margin-top:24px; background:var(--kaki); color:#0f1a12; text-align:center; padding:14px 10px; font-weight:700;
+      letter-spacing:.2px; border-top:1px solid color-mix(in oklab, black 10%, var(--kaki));
+    }
+  
+    /* ===========================
+       Recherche + À propos
+       =========================== */
+    .bloc-recherche{margin:6px 6px 12px; display:flex; flex-direction:column; gap:6px}
+    .lbl-recherche{font-size:12px; color:var(--atténué); font-weight:700}
+    #recherche-nom{
+      appearance:none; width:100%;
+      border:1px solid var(--bordure); border-radius:10px; padding:8px 10px; font-size:14px; background:#fff;
+      outline:none;
+    }
+    #recherche-nom:focus{
+      border-color:color-mix(in oklab, var(--bleu) 35%, var(--bordure));
+      box-shadow:0 0 0 3px color-mix(in oklab, var(--bleu) 20%, transparent);
+    }
+    footer details{max-width:1200px; margin:0 auto; text-align:left}
+    footer details>summary{cursor:pointer; font-weight:800; list-style:none}
+    footer details>summary::marker{display:none}
+    footer .contenu-apropos{padding:8px 0 0}
+    footer .contenu-apropos p{margin:6px 0}
+    footer a{color:#0b2b7a; text-decoration:none; border-bottom:1px dashed #0b2b7a}
+    footer a:hover{border-bottom-style:solid}
+
+  
+    /* ===========================
+       Landing page (choix d'espaces)
+       =========================== */
+    #landing{min-height:100vh; display:grid; place-items:center; padding:40px 16px}
+    .landing-wrap{max-width:1100px; width:100%; text-align:center}
+    .landing-title{font-size:clamp(22px,3vw,32px); margin:0 0 10px; font-weight:800; letter-spacing:.2px}
+    .landing-sub{color:var(--atténué); margin:0 0 22px}
+    .landing-grid{
+      display:grid; gap:14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    }
+    .btn-espace{
+      appearance:none; border:1px solid var(--bordure); background:var(--bg2);
+      border-radius:16px; padding:18px 16px; cursor:pointer; font-weight:800;
+      box-shadow:var(--ombre); transition:transform .08s ease, border-color .2s ease;
+    }
+    .btn-espace:hover{border-color:color-mix(in oklab, var(--bleu) 25%, var(--bordure))}
+    .btn-espace:active{transform:scale(.98)}
+    .btn-espace .tag{display:inline-block; margin-top:8px; font-weight:600; font-size:12px; color:var(--atténué)}
+    .emoji{font-size:22px; margin-right:8px}
+    .masqué{display:none !important}
+
+    /* ===========================
+       Overlay "Espaces"
+       =========================== */
+    .switch-espaces{
+      position:fixed; inset:0; background:color-mix(in oklab, #0b1220 60%, transparent);
+      display:none; align-items:center; justify-content:center; z-index:1000;
+    }
+    .switch-espaces.ouvert{display:flex}
+    .switch-panel{
+      width:min(860px, 92vw); background:var(--bg2); border:1px solid var(--bordure);
+      border-radius:18px; box-shadow:0 20px 80px rgba(0,0,0,.25); padding:20px;
+      animation: fondu .24s ease-out both;
+    }
+    .switch-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
+    .switch-title{font-weight:800; font-size:18px}
+    .switch-close{appearance:none; border:1px solid var(--bordure); background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer}
+    .switch-grid{display:grid; gap:10px; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); margin-top:10px}
+    .switch-item{
+      appearance:none; border:1px solid var(--bordure); background:#fff; padding:14px; border-radius:14px; cursor:pointer;
+      text-align:left; font-weight:700;
+    }
+    .switch-item:hover{border-color:color-mix(in oklab, var(--bleu) 25%, var(--bordure))}
+    .badge-actif{display:inline-block; margin-left:8px; font-size:11px; padding:3px 8px; border-radius:999px; background:var(--bleu-50); border:1px solid color-mix(in oklab, var(--bleu) 25%, var(--bordure)); color:#0b2b7a}
+    .header-actions{display:flex; gap:8px; align-items:center}
+    .btn-switch{appearance:none; border:1px solid var(--bordure); background:var(--bg2); padding:6px 10px; border-radius:10px; cursor:pointer; font-weight:700}
+
+    /* ===========================
+       Dropdown "Espaces" (header)
+       =========================== */
+    .dd-espaces{position:absolute; top:100%; right:0; min-width:220px; background:var(--bg2);
+      border:1px solid var(--bordure); border-radius:14px; box-shadow:0 14px 60px rgba(0,0,0,.25);
+      opacity:0; transform:translateY(-6px); pointer-events:none; transition:opacity .16s ease, transform .16s ease; z-index:999}
+    .dd-espaces.ouvert{opacity:1; transform:translateY(4px); pointer-events:auto}
+    .dd-espaces ul{list-style:none; margin:6px; padding:6px}
+    .dd-espaces li{margin:0; padding:0}
+    .dd-espaces button{width:100%; text-align:left; appearance:none; background:#fff; border:1px solid transparent;
+      border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:700}
+    .dd-espaces button:hover{border-color:color-mix(in oklab, var(--bleu) 25%, var(--bordure))}
+    .header-actions{position:relative} /* anchor for dropdown */
+    .badge-espace{display:inline-block; margin-left:8px; font-size:11px; padding:3px 8px; border-radius:999px;
+      background:var(--bleu-50); border:1px solid color-mix(in oklab, var(--bleu) 25%, var(--bordure)); color:#0b2b7a}
+
+    /* ===== Landing layout v2 ===== */
+    #landing{min-height:100vh; display:grid; place-items:center; padding:40px 16px}
+    .landing-wrap{max-width:1100px; width:100%; display:grid; gap:18px;
+      grid-template-rows: auto auto 1fr auto; align-items:center; justify-items:center}
+    .landing-video{width:min(920px, 95vw)}
+    .landing-video .media{margin:0}
+    .landing-title{font-size:clamp(22px,3vw,32px); margin:4px 0 10px; font-weight:800; letter-spacing:.2px; text-align:center}
+    .landing-grid{align-self:end; width:100%; display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));}
+    .landing-apropos{width:100%; margin-top:18px}
+
+/* ===== Media hero & YouTube embed ===== */
+.media-hero{margin:0 0 12px; border:1px solid var(--bordure); border-radius:12px; overflow:hidden; background:#000}
+.yt-embed{position:relative; width:100%; padding-top:56.25%; background:#000; border-radius:12px; overflow:hidden; border:1px solid var(--bordure)}
+.yt-embed iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+
+
+/* ===== Landing video hero ===== */
+.landing-video{max-width:min(1100px,92vw); margin:12px auto 18px; border-radius:16px; overflow:hidden; border:1px solid var(--bordure); background:#000; box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.landing-video .yt-embed{border:none; border-radius:0}
+
+/* ===== Image par item (fiche) ===== */
+.media-photo{margin:12px 0; border:1px solid var(--bordure); border-radius:12px; overflow:hidden; background:#fff}
+.media-photo img{display:block; width:100%; height:auto}
+
+</style>
+</head>
+<body><section id="landing"><div class="landing-wrap anime-fondu"><div class="landing-video"><div class="yt-embed" data-yt="-L2h8be4wQg"></div></div><div class="landing-video"><p class="media video" data-yt="M7lc1UVf-VE"></p></div><h1 class="landing-title">Sélectionnez un espace</h1><div class="landing-grid"><button class="btn-espace" data-espace-target="regie-verte" type="button"><span class="emoji">🎛️</span><span>Régie verte</span></button><button class="btn-espace" data-espace-target="regie-bleue" type="button"><span class="emoji">🎚️</span><span>Régie bleue</span></button><button class="btn-espace" data-espace-target="production" type="button"><span class="emoji">🎬</span><span>Production</span></button><button class="btn-espace" data-espace-target="production-son" type="button"><span class="emoji">🎤</span><span>Production son</span></button><button class="btn-espace" data-espace-target="magasin-lumiere" type="button"><span class="emoji">💡</span><span>Magasin lumière</span></button><button class="btn-espace" data-espace-target="magasin-audio" type="button"><span class="emoji">🔊</span><span>Magasin audio</span></button><button class="btn-espace" data-espace-target="magasin-video" type="button"><span class="emoji">📺</span><span>Magasin vidéo</span></button></div><div class="landing-apropos"><details class="apropos">
+<summary>À propos de ce site (cliquez ici pour lire une belle histoire)</summary>
+<div class="contenu-apropos">
+<p>Ce site a pris environ neuf heures à être construit mais il reste imparfait malgré nos efforts : merci d’être tolérant·e avec nous.</p>
+<p>Un jour, Karim a croisé un verre de lait‑fraise très aimable et une bande de fraises Tagada un brin turbulentes.</p>
+<p>Nous avons alors monté l’opération <em>Mission Monnaert</em> : livrer ces douceurs à M. Monnaert, notre professeur, sans rien égarer en route.</p>
+<p>Le trajet fut digne d’un film d’action (moins les explosions) ; oui, nous avons goûté une ou deux friandises… pour le contrôle qualité.</p>
+<p>Au final, la livraison a bien été effectuée, et le sourire de M. Monnaert valait bien toutes ces péripéties.</p>
+<div class="licence-cc">
+<p><strong>Licence :</strong> Ce travail est sous licence
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr" rel="license noopener" target="_blank">Creative Commons BY‑NC‑ND 4.0</a>
+            (attribution, non‑commercial, pas de modifications). Pour toute autre utilisation, merci de contacter M.HAMIDOU à l'adresse karim.hamidou200725@gmail.com</p>
+</div>
+<p class="credit">Site web développé avec 🤍 par Karim HAMIDOU et Théandre GOUBET — alimentés au lait‑fraise et aux fraises Tagada.</p>
+<p class="credit">Données cherchées par LEMAIRE Nolan, BERTRAND Steven, ALLAIN Gabriel, GOUBET Théandre et HAMIDOU Karim.</p>
+</div>
+</details></div></div></section>
+<header aria-label="En-tête" role="banner">
+<div class="entete-interne">
+<div class="marque">Catalogue <b>Régie</b> — Interface 3 panneaux</div>
+<div aria-hidden="true" class="indice">Choisis une rubrique puis une carte pour afficher la fiche →</div>
+<div class="header-actions"><button class="btn-switch" id="btn-home" type="button" aria-label="Retour à l'accueil (landing)"><img src="data:image/jpeg;base64,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" alt="" width="28" height="28"/></button><div aria-hidden="true" class="dd-espaces" id="dd-espaces" role="menu"><ul><li><button data-espace-target="regie-verte" type="button">Régie verte</button></li><li><button data-espace-target="regie-bleue" type="button">Régie bleue</button></li><li><button data-espace-target="production" type="button">Production</button></li><li><button data-espace-target="production-son" type="button">Production son</button></li><li><button data-espace-target="magasin-lumiere" type="button">Magasin lumière</button></li><li><button data-espace-target="magasin-audio" type="button">Magasin audio</button></li><li><button data-espace-target="magasin-video" type="button">Magasin vidéo</button></li></ul></div></div></div>
+</header><div class="masqué" id="app"><main class="grille" role="main">
+<!-- =======================
+         Panneau gauche : Rubriques
+         ======================= -->
+<aside aria-label="Rubriques" class="panneau">
+<nav aria-label="Rubriques">
+<div class="bloc-recherche" role="search">
+<label class="lbl-recherche" for="recherche-nom">Recherche</label>
+<input aria-describedby="etat-recherche" autocomplete="off" id="recherche-nom" placeholder="Rechercher un équipement par nom…" type="search"/>
+<p aria-live="polite" class="indice masqué" id="etat-recherche"></p>
+</div>
+<ul class="rubriques">
+<li><button class="bouton-rubrique" data-cat="plan" type="button"><span class="emoji-rubrique">🗺️</span> Plan</button></li>
+<li><button class="bouton-rubrique" data-cat="audio" type="button"><span class="emoji-rubrique">🔊</span> Audio</button></li>
+<li><button aria-current="page" class="bouton-rubrique" data-cat="video" type="button"><span class="emoji-rubrique">🎥</span> Vidéo</button></li>
+<li><button class="bouton-rubrique" data-cat="reseau" type="button"><span class="emoji-rubrique">🌐</span> Réseau</button></li>
+<li><button class="bouton-rubrique" data-cat="monitoring" type="button"><span class="emoji-rubrique">🖥️</span> Monitoring</button></li>
+<li><button class="bouton-rubrique" data-cat="cablerie" type="button"><span class="emoji-rubrique">🔌</span> Câblerie</button></li>
+<li><button class="bouton-rubrique" data-cat="accessoires" type="button"><span class="emoji-rubrique">🧰</span> Accessoires</button></li>
+<li><button class="bouton-rubrique" data-cat="plateau" type="button"><span class="emoji-rubrique">🎬</span> Plateau</button></li>
+</ul>
+</nav>
+</aside>
+<!-- =======================
+         Panneau centre : Listes
+         ======================= -->
+<section aria-label="Liste d’équipements" class="panneau centre">
+
+<!-- PLAN -->
+<div aria-label="Plan — Liste" class="section-categorie" data-cat="plan" data-espace="regie-verte" role="region">
+  <div class="cartes">
+    <!-- PLAN GÉNÉRAL -->
+    <button aria-pressed="false" class="carte" data-id="plan-general" type="button">
+      <div class="ligne-carte">
+        <div class="avatar">P</div>
+        <div class="grandit">
+          <h4 class="titre">Plan général</h4>
+          <div class="soustitre">Vue d’ensemble — Régie verte</div>
+          <div class="etiquettes">
+            <span class="etiquette">plan</span>
+            <span class="etiquette">régie verte</span>
+          </div>
+        </div>
+      </div>
+      <article class="detail masqué">
+        <div class="detail">
+          <h2>Plan général</h2>
+          <p class="sous">Vue d’ensemble de la régie verte</p>
+          <figure class="media-photo">
+            <img src="synoptique.png" alt="Plan général de la régie verte"/>
+             <p class="sous"><a href="synoptique.png" download>📥 Télécharger l’image</a></p>
+          </figure>
+        </div>
+      </article>
+    </button>
+  </div>
+</div>
+
+<!-- AUDIO -->
+<div aria-label="Audio — Liste" class="section-categorie masqué" data-cat="audio" data-espace="regie-verte" role="region">
+<div class="cartes">
+<!-- ANTMIX 12 FX -->
+<button aria-pressed="false" class="carte" data-id="antmix-12-fx" type="button">
+<div class="ligne-carte">
+<div class="avatar">A</div>
+<div class="grandit">
+<h4 class="titre">ANTMIX 12 FX</h4>
+<div class="soustitre">ANT · MIX 12 FX</div>
+<div class="etiquettes"><span class="etiquette">table de mixage</span><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="data:image/jpeg;base64,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" alt="Photo — ANTMIX 12 FX"/></figure>
+
+<h2>ANTMIX 12 FX</h2>
+<p class="sous">Marque/Modèle · ANT · MIX 12 FX</p>
+<div>
+<span class="pastille">table de mixage</span><span class="pastille">audio</span>
+</div>
+<table class="caracts">
+<tbody>
+<tr><th>Entrées</th><td>6 entrées XLR (à confirmer)</td></tr>
+<tr><th>Sorties</th><td>2 sorties XLR (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Petite console de mixage pour additionner plusieurs micros et sources ligne, ajuster niveaux/égalisation et envoyer un mix propre vers l’enregistreur, le plateau ou le diffuseur. Idéale pour un plateau simple ou un duplex téléphonique.</p>
+<p class="notes"><strong>Notes :</strong> Gère les volumes par canal et fonctions « Mic on/off » (à confirmer selon version). <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjp9d72r-qPAxVQU6QEHQjzLGUQFnoECCoQAQ&amp;url=https%3A%2F%2Fwww.ant-intomusic.com%2Ffiles%2Fmanuali%2Fantmix_series_manual_fr_advpro.pdf&amp;usg=AOvVaw14W8lv4Jl2QAH-UwxOg7Xi&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- 2 Mix -->
+<button aria-pressed="false" class="carte" data-id="2-mix" type="button">
+<div class="ligne-carte">
+<div class="avatar">2</div>
+<div class="grandit">
+<h4 class="titre">2 Mix</h4>
+<div class="soustitre">Blackmagic Design</div>
+<div class="etiquettes"><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=2 Mix" alt="Photo — 2 Mix"/></figure>
+
+<h2>2 Mix</h2>
+<p class="sous">Marque · Blackmagic Design</p>
+<div><span class="pastille">audio</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Sorties</th><td>2 sorties XLR (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Boîtier simple pour regrouper 2 signaux vers un bus commun (ou distribuer). Utile pour envoyer un mix stéréo vers un enregistreur/retour. Dénomination et caractéristiques exactes à valider (référence peu standard).</p>
+</div>
+</article>
+</button>
+<!-- Codec Phone -->
+<button aria-pressed="false" class="carte" data-id="codec-phone" type="button">
+<div class="ligne-carte">
+<div class="avatar">C</div>
+<div class="grandit">
+<h4 class="titre">Codec Phone</h4>
+<div class="soustitre">ABC</div>
+<div class="etiquettes"><span class="etiquette">codec</span><span class="etiquette">téléphone</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Codec Phone" alt="Photo — Codec Phone"/></figure>
+
+<h2>Codec Phone</h2>
+<p class="sous">Marque · ABC</p>
+<div><span class="pastille">codec</span><span class="pastille">téléphone</span></div>
+<p class="description"><strong>À quoi ça sert ?</strong> Permet d’intégrer une intervention téléphonique à l’antenne/au plateau avec une qualité stabilisée (ligne hybride/VoIP). Indispensable pour interviews à distance. Modèle précis à confirmer.</p>
+</div>
+</article>
+</button>
+<!-- Demux (SDI → Audio) -->
+<button aria-pressed="false" class="carte" data-id="demux-sdi-audio" type="button">
+<div class="ligne-carte">
+<div class="avatar">D</div>
+<div class="grandit">
+<h4 class="titre">Demux (SDI → Audio)</h4>
+<div class="soustitre">Blackmagic Design</div>
+<div class="etiquettes"><span class="etiquette">désemboitage</span><span class="etiquette">sdi</span><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://shop.ccisolutions.com/StoreFront/jsp/images/products/BMD-CONVMCSAUD4_E.JPG" alt="Photo — Demux (SDI → Audio)"/></figure>
+
+<h2>Demux (SDI → Audio)</h2>
+<p class="sous">Marque · Blackmagic Design</p>
+<div><span class="pastille">désemboitage</span><span class="pastille">sdi</span><span class="pastille">audio</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Sorties</th><td>2 sorties XLR + 2 sorties AES (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Récupère l’audio embarqué dans le SDI (« embedded ») et le sort en analogique/AES pour un mixer, un monitoring ou un enregistreur.</p>
+</div>
+</article>
+</button>
+<!-- the t.bone HPA6 -->
+<button aria-pressed="false" class="carte" data-id="the-tbone-hpa6" type="button">
+<div class="ligne-carte">
+<div class="avatar">T</div>
+<div class="grandit">
+<h4 class="titre">the t.bone HPA6</h4>
+<div class="soustitre">the t.bone · HPA6</div>
+<div class="etiquettes"><span class="etiquette">ampli casque</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=the t.bone HPA6" alt="Photo — the t.bone HPA6"/></figure>
+
+<h2>the t.bone HPA6</h2>
+<p class="sous">Marque/Modèle · the t.bone · HPA6</p>
+<div><span class="pastille">ampli casque</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Sorties</th><td>6 sorties casque (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Distribue un même mix casque vers plusieurs opérateurs/plateau, chacun réglant son volume. Très courant en studio. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwj19r3UsOqPAxVTTKQEHfRtPBYQFnoECBkQAQ&amp;url=https%3A%2F%2Fwww.huss-licht-ton.de%2Fimages%2Fproducts_download%2FUser_Manual_13673_1.pdf&amp;usg=AOvVaw1be4C4-9G71AUVsk8ExGPI&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Intercom centrale -->
+<button aria-pressed="false" class="carte" data-id="intercom-centrale" type="button">
+<div class="ligne-carte">
+<div class="avatar">I</div>
+<div class="grandit">
+<h4 class="titre">ODIN OMNEO digital intercom RTS KP-4016 A5F</h4>
+<div class="soustitre">ATS (Options)</div>
+<div class="etiquettes"><span class="etiquette">intercom</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Intercom centrale" alt="Photo — Intercom centrale"/></figure>
+
+<h2>ODIN OMNEO digital intercom RTS KP-4016 A5Fe</h2>
+<p class="sous">Marque · ATS (Options)</p>
+<div><span class="pastille">intercom</span></div>
+<p class="description"><strong>À quoi ça sert ?</strong> Cœur du système de communication technique (régie ↔ plateau, caméras, machinerie). Gère les groupes, le talkback et parfois le tally. Nombre exact de canaux/ports à confirmer.</p>
+<p class="notes"><strong>Notes :</strong> « 9 only » mentionné à vérifier.</p>
+</div>
+</article>
+</button>
+<!-- POST Entrances ? -->
+<button aria-pressed="false" class="carte" data-id="post-entrances" type="button">
+<div class="ligne-carte">
+<div class="avatar">P</div>
+<div class="grandit">
+<h4 class="titre">POST Entrances ?</h4>
+<div class="soustitre">—</div>
+<div class="etiquettes"><span class="etiquette">routing</span><span class="etiquette">sdi</span><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=POST Entrances ?" alt="Photo — POST Entrances ?"/></figure>
+
+<h2>POST Entrances ?</h2>
+<div><span class="pastille">routing</span><span class="pastille">sdi</span><span class="pastille">audio</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Vidéo</th><td>SDI IN / SDI OUT (à confirmer)</td></tr>
+<tr><th>Audio</th><td>2 entrées XLR (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Élément supposé de distribution/retour post-prod ou patch. Référence à clarifier sur site.</p>
+</div>
+</article>
+</button>
+<!-- Produit 4026 AV -->
+<button aria-pressed="false" class="carte" data-id="produit-4026-av" type="button">
+<div class="ligne-carte">
+<div class="avatar">P</div>
+<div class="grandit">
+<h4 class="titre">Produit 4026 AV</h4>
+<div class="soustitre">PLAYTRONIC</div>
+<div class="etiquettes"><span class="etiquette">à confirmer</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Produit 4026 AV" alt="Photo — Produit 4026 AV"/></figure>
+
+<h2>Produit 4026 AV</h2>
+<p class="sous">Marque · PLAYTRONIC</p>
+<div><span class="pastille">à confirmer</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Divers</th><td>HP (à confirmer)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Probable boîtier audio/vidéo (HP = haut-parleur ?). Détails exacts à vérifier physiquement.</p>
+</div>
+</article>
+</button>
+</div>
+</div>
+<!-- VIDEO (active par défaut) -->
+<div aria-label="Vidéo — Liste" class="section-categorie" data-cat="video" data-espace="regie-verte" role="region">
+<div class="cartes">
+<!-- Sony XVS-6000 -->
+<button aria-pressed="false" class="carte" data-id="sony-xvs-6000" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony XVS-6000</h4>
+<div class="soustitre">Sony · XVS-6000</div>
+<div class="etiquettes"><span class="etiquette bleue">mélangeur</span><span class="etiquette">réalisation</span><span class="etiquette">key</span><span class="etiquette">multicam</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail"><div class="media-hero"><div class="yt-embed" data-yt="OfT3vZHxIVk">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony XVS-6000" alt="Photo — Sony XVS-6000"/></figure>
+</div></div>
+<h2>Sony XVS-6000</h2>
+<p class="sous">Mélangeur de production vidéo</p>
+<div><span class="pastille">mélangeur</span><span class="pastille">réalisation</span><span class="pastille">key</span><span class="pastille">multicam</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Entrées</th><td>Jusqu’à 80 (SDI/3G, option 12G-SDI)</td></tr>
+<tr><th>Sorties</th><td>Jusqu’à 32 (SDI/3G)</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> C’est le cœur de la réalisation multicaméra : sélection des sources, transitions, incrustations (keys), effets et retours. Adapté aux plateaux TV et captations complexes.</p>
+<p class="notes"><strong>Notes :</strong> Capacités d’entrées/sorties dépendantes des cartes installées. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjzjbuWouqPAxXEU6QEHT8yHxgQFnoECBoQAQ&amp;url=https%3A%2F%2Fpro.sony%2Ffr_CH%2Fpdf%2Fxvs-6000&amp;usg=AOvVaw02Zj_jgJ3UlhOSOy-t-8jw&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Sony RCP (x4) -->
+<button aria-pressed="false" class="carte" data-id="sony-rcp-x4" type="button">
+  <div class="ligne-carte">
+    <div class="avatar">R</div>
+    <div class="grandit">
+      <h4 class="titre">SONY RCP-1500</h4>
+      <div class="soustitre">Sony · Remote Control Panel</div>
+      <div class="etiquettes"><span class="etiquette bleue">RCP</span><span class="etiquette">caméra</span><span class="etiquette">CCU</span></div>
+    </div>
+  </div>
+  <article class="detail masqué">
+    <div class="detail">
+      <div class="media-hero">
+        <div class="yt-embed" data-yt="z2D4UvWovJI">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony RCP (x4)" alt="Photo — Sony RCP (x4)"/></figure>
+</div>
+      </div>
+      <h2>SONY RCP-1500</h2>
+      <p class="sous">Pupitres de télécommande caméra — 4 unités</p>
+      <div><span class="pastille">contrôle</span><span class="pastille">caméra</span></div>
+      <table class="caracts">
+        <tbody>
+          <tr><th>Fonctions</th><td>Iris, gain, balance des blancs, paint, tally… (selon modèles)</td></tr>
+          <tr><th>Connexions</th><td>Ethernet/CCU (selon configuration de la régie)</td></tr>
+        </tbody>
+      </table>
+      <p class="notes"><strong>Notes :</strong> 4 pupitres identiques disponibles (x4). Liaison avec CCU/caméras selon la configuration plateau.</p>
+    </div>
+  </article>
+</button>
+
+<!-- Sony MKS-X7017 -->
+<button aria-pressed="false" class="carte" data-id="sony-mks-x7017" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony MKS-X7017 (Pupitre)</h4>
+<div class="soustitre">Panneau de contrôle</div>
+<div class="etiquettes"><span class="etiquette">panneau de contrôle</span><span class="etiquette">t-bar</span><span class="etiquette">surface</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony MKS-X7017 (Pupitre)" alt="Photo — Sony MKS-X7017 (Pupitre)"/></figure>
+
+<h2>Sony MKS-X7017 (Pupitre)</h2>
+<p class="sous">Panel opérateur pour XVS-6000</p>
+<div><span class="pastille">panneau de contrôle</span><span class="pastille">t-bar</span><span class="pastille">surface</span></div>
+<table class="caracts">
+<tbody>
+<tr><th>Connexions</th><td>Ethernet vers XVS-6000</td></tr>
+<tr><th>I/O vidéo</th><td>Aucune</td></tr>
+</tbody>
+</table>
+<p class="description"><strong>À quoi ça sert ?</strong> Console matérielle (boutons, T-bar) qui pilote le mélangeur pour des opérations rapides et fiables en direct.<a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjmtbzMpuqPAxUjV6QEHR26FNMQFnoECBcQAQ&amp;url=https%3A%2F%2Fpro.sony%2Fsupport%2Fres%2Fmanuals%2F4567%2F1c69a0dc97b11fb0372df981503c3291%2F45673690M.pdf&amp;usg=AOvVaw3eT0TryiGSW3zL7L6NE_vs&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a>
+</p>
+</div>
+</article>
+</button>
+<!-- Sony MKS-X7018 -->
+<button aria-pressed="false" class="carte" data-id="sony-mks-x7018" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony MKS-X7018 (Pupitre)</h4>
+<div class="soustitre">Panneau de contrôle</div>
+<div class="etiquettes"><span class="etiquette">panneau de contrôle</span><span class="etiquette">t-bar</span><span class="etiquette">surface</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony MKS-X7018 (Pupitre)" alt="Photo — Sony MKS-X7018 (Pupitre)"/></figure>
+
+<h2>Sony MKS-X7018 (Pupitre)</h2>
+<p class="sous">Panel opérateur pour XVS-6000</p>
+<div><span class="pastille">panneau de contrôle</span><span class="pastille">t-bar</span><span class="pastille">surface</span></div>
+<table class="caracts"><tbody>
+<tr><th>Connexions</th><td>Ethernet vers XVS-6000</td></tr>
+<tr><th>I/O vidéo</th><td>Aucune</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Variante de panel pour disposer d’un autre format/ergonomie selon la réalisation. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjmtbzMpuqPAxUjV6QEHR26FNMQFnoECBcQAQ&amp;url=https%3A%2F%2Fpro.sony%2Fsupport%2Fres%2Fmanuals%2F4567%2F1c69a0dc97b11fb0372df981503c3291%2F45673690M.pdf&amp;usg=AOvVaw3eT0TryiGSW3zL7L6NE_vs&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Sony MKS-X7031 -->
+<button aria-pressed="false" class="carte" data-id="sony-mks-x7031" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony MKS-X7031 (Pupitre)</h4>
+<div class="soustitre">Panneau de contrôle</div>
+<div class="etiquettes"><span class="etiquette">panneau de contrôle</span><span class="etiquette">t-bar</span><span class="etiquette">surface</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony MKS-X7031 (Pupitre)" alt="Photo — Sony MKS-X7031 (Pupitre)"/></figure>
+
+<h2>Sony MKS-X7031 (Pupitre)</h2>
+<p class="sous">Panel opérateur pour XVS-6000</p>
+<div><span class="pastille">panneau de contrôle</span><span class="pastille">t-bar</span><span class="pastille">surface</span></div>
+<table class="caracts"><tbody>
+<tr><th>Connexions</th><td>Ethernet vers XVS-6000</td></tr>
+<tr><th>I/O vidéo</th><td>Aucune</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Autre déclinaison de surface pour adapter la disposition des touches aux besoins du direct. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjmtbzMpuqPAxUjV6QEHR26FNMQFnoECBcQAQ&amp;url=https%3A%2F%2Fpro.sony%2Fsupport%2Fres%2Fmanuals%2F4567%2F1c69a0dc97b11fb0372df981503c3291%2F45673690M.pdf&amp;usg=AOvVaw3eT0TryiGSW3zL7L6NE_vs&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Sony MKS-X2920 -->
+<button aria-pressed="false" class="carte" data-id="sony-mks-x2920" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony MKS-X2920 (Interface)</h4>
+<div class="soustitre">Interface panneaux / tally / GPI/O</div>
+<div class="etiquettes"><span class="etiquette">interface</span><span class="etiquette">panneaux</span><span class="etiquette">tally</span><span class="etiquette">gpi</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony MKS-X2920" alt="Photo — Sony MKS-X2920"/></figure>
+
+<h2>Sony MKS-X2920</h2>
+<p class="sous">Interface système</p>
+<div><span class="pastille">interface</span><span class="pastille">panneaux</span><span class="pastille">tally</span><span class="pastille">gpi</span></div>
+<table class="caracts"><tbody>
+<tr><th>Ports</th><td>Ethernet, série, GPI/O</td></tr>
+<tr><th>Rôle</th><td>Relie panels, tally et triggers GPI/O au mélangeur</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Hub de communication entre surfaces, système de voyants (tally) et automatisations (GPI/O). <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwju7Mudp-qPAxUAMfsDHWjmDGoQFnoECBwQAQ&amp;url=https%3A%2F%2Fpro.sony%2Fen_FI%2Fpdf%2Ficp-x7000&amp;usg=AOvVaw0HSl-5UXygurA6SiYz5Xtu&amp;opi=89978449">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Blackmagic Audio Monitor 12G -->
+<button aria-pressed="false" class="carte" data-id="bmd-audio-monitor-12g" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Blackmagic Audio Monitor 12G</h4>
+<div class="soustitre">Monitoring audio</div>
+<div class="etiquettes"><span class="etiquette">monitoring audio</span><span class="etiquette">12G-SDI</span><span class="etiquette">désemboitage</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://images.blackmagicdesign.com/images/products/blackmagicaudiomonitor/product-grid/blackmagic-audio-monitor-12g-g3.jpg?_v=1711491720" alt="Photo — Blackmagic Audio Monitor 12G"/></figure>
+
+<h2>Blackmagic Audio Monitor 12G</h2>
+<p class="sous">Unité de monitoring audio 12G</p>
+<div><span class="pastille">monitoring audio</span><span class="pastille">12G-SDI</span><span class="pastille">désemboitage</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>12G-SDI, AES/EBU, XLR/RCA</td></tr>
+<tr><th>Sorties</th><td>SDI loop, casque, HP</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Écoute et contrôle du niveau/phase de l’audio, venant soit du SDI soit d’entrées audio dédiées. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwijhsvMp-qPAxVBNvsDHcm7DmwQFnoECBoQAQ&amp;url=https%3A%2F%2Fdocuments.blackmagicdesign.com%2FUserManuals%2FAudioMonitorManual.pdf&amp;usg=AOvVaw3t8tKO3Xp6BM9zkp9R0qpk&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Blackmagic SmartView 4K -->
+<button aria-pressed="false" class="carte" data-id="bmd-smartview-4k" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Blackmagic SmartView 4K</h4>
+<div class="soustitre">Écran de monitoring</div>
+<div class="etiquettes"><span class="etiquette">écran</span><span class="etiquette">monitoring</span><span class="etiquette">12G-SDI</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://cdn.abicart.com/shop/29620/art20/h9357/179759357-origpic-468dc9.jpg" alt="Photo — Blackmagic SmartView 4K"/></figure>
+
+<h2>Blackmagic SmartView 4K</h2>
+<p class="sous">Moniteur 4K pour sources SDI</p>
+<div><span class="pastille">écran</span><span class="pastille">monitoring</span><span class="pastille">12G-SDI</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>2× 12G-SDI (boucle)</td></tr>
+<tr><th>Contrôle</th><td>Ethernet</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Affiche les retours de caméras/PGM en très faible latence, jusqu’en 4K via 12G-SDI. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjB9Mnlp-qPAxWxXKQEHXCAHHAQFnoECBcQAQ&amp;url=https%3A%2F%2Fstatic.rt-events.fr%2Fdocument%2Fsmartview-4k-techspecs.pdf&amp;usg=AOvVaw1lb7xP6b_DN8Ewk9MjwUZK&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Teranex Mini – Audio to SDI -->
+<button aria-pressed="false" class="carte" data-id="bmd-teranex-audio-to-sdi" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Teranex Mini – Audio → SDI</h4>
+<div class="soustitre">Convertisseur « embed »</div>
+<div class="etiquettes"><span class="etiquette">convertisseur</span><span class="etiquette">embed</span><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="data:image/jpeg;base64,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" alt="Photo — Teranex Mini — Audio → SDI"/></figure>
+
+<h2>Teranex Mini — Audio → SDI</h2>
+<p class="sous">Blackmagic Design</p>
+<div><span class="pastille">convertisseur</span><span class="pastille">embed</span><span class="pastille">audio</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>Audio analogique/AES</td></tr>
+<tr><th>Sorties</th><td>12G-SDI (audio embarqué)</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Injecte (embarque) une piste audio externe dans un flux SDI pour acheminer audio+vidéo ensemble.  <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;ved=2ahUKEwigyvL5qOqPAxUjRKQEHVPqGp8QFnoECBgQAQ&amp;url=https%3A%2F%2Fstatic.rt-events.fr%2Fdocument%2Fteranex-mini-manual-francais.pdf&amp;usg=AOvVaw3iYP94ibepmdHpQr4p0aUW&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Teranex Mini – SDI to HDMI -->
+<button aria-pressed="false" class="carte" data-id="bmd-teranex-sdi-to-hdmi" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Teranex Mini – SDI → HDMI</h4>
+<div class="soustitre">Convertisseur monitoring</div>
+<div class="etiquettes"><span class="etiquette">convertisseur</span><span class="etiquette">monitoring</span><span class="etiquette">hdmi</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://images.blackmagicdesign.com/images/products/teranexmini/techspecs/hero/teranex-mini-sdi-to-hdmi-12g-sm.jpg?_v=1539836848" alt="Photo — Teranex Mini — SDI → HDMI"/></figure>
+
+<h2>Teranex Mini — SDI → HDMI</h2>
+<p class="sous">Blackmagic Design</p>
+<div><span class="pastille">convertisseur</span><span class="pastille">monitoring</span><span class="pastille">hdmi</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>12G-SDI</td></tr>
+<tr><th>Sorties</th><td>HDMI + boucle SDI</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Affiche une source SDI sur un écran/TV HDMI, pratique en contrôle local.  <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;ved=2ahUKEwigyvL5qOqPAxUjRKQEHVPqGp8QFnoECBgQAQ&amp;url=https%3A%2F%2Fstatic.rt-events.fr%2Fdocument%2Fteranex-mini-manual-francais.pdf&amp;usg=AOvVaw3iYP94ibepmdHpQr4p0aUW&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Teranex Mini – SDI to Audio -->
+<button aria-pressed="false" class="carte" data-id="bmd-teranex-sdi-to-audio" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Teranex Mini – SDI → Audio</h4>
+<div class="soustitre">Convertisseur « de-embed »</div>
+<div class="etiquettes"><span class="etiquette">convertisseur</span><span class="etiquette">de-embed</span><span class="etiquette">audio</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://images.blackmagicdesign.com/images/products/teranexmini/techspecs/hero/teranex-mini-sdi-to-audio-12g-sm.jpg?_v=1543957634" alt="Photo — Teranex Mini — SDI → Audio"/></figure>
+
+<h2>Teranex Mini — SDI → Audio</h2>
+<p class="sous">Blackmagic Design</p>
+<div><span class="pastille">convertisseur</span><span class="pastille">de-embed</span><span class="pastille">audio</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>12G-SDI</td></tr>
+<tr><th>Sorties</th><td>XLR/AES (audio dé-embarqué)</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Sépare (dé-embarque) l’audio du SDI pour traitement/monitoring indépendant. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;ved=2ahUKEwigyvL5qOqPAxUjRKQEHVPqGp8QFnoECBgQAQ&amp;url=https%3A%2F%2Fstatic.rt-events.fr%2Fdocument%2Fteranex-mini-manual-francais.pdf&amp;usg=AOvVaw3iYP94ibepmdHpQr4p0aUW&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Teranex Mini – SDI to Analog -->
+<button aria-pressed="false" class="carte" data-id="bmd-teranex-sdi-to-analog" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">Teranex Mini – SDI → Analogique</h4>
+<div class="soustitre">Convertisseur analogique</div>
+<div class="etiquettes"><span class="etiquette">convertisseur</span><span class="etiquette">analogique</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="data:image/jpeg;base64,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" alt="Photo — Teranex Mini — SDI → Analogique"/></figure>
+
+<h2>Teranex Mini — SDI → Analogique</h2>
+<p class="sous">Blackmagic Design</p>
+<div><span class="pastille">convertisseur</span><span class="pastille">analogique</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>12G-SDI</td></tr>
+<tr><th>Sorties</th><td>Vidéo/Audio analogiques</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Alimente un moniteur/équipement analogique à partir d’un signal SDI moderne. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;ved=2ahUKEwigyvL5qOqPAxUjRKQEHVPqGp8QFnoECBgQAQ&amp;url=https%3A%2F%2Fstatic.rt-events.fr%2Fdocument%2Fteranex-mini-manual-francais.pdf&amp;usg=AOvVaw3iYP94ibepmdHpQr4p0aUW&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- HyperDeck Studio Mini -->
+<button aria-pressed="false" class="carte" data-id="bmd-hyperdeck-studio-mini" type="button">
+<div class="ligne-carte">
+<div class="avatar">B</div>
+<div class="grandit">
+<h4 class="titre">HyperDeck Studio Mini</h4>
+<div class="soustitre">Enregistreur / Playout</div>
+<div class="etiquettes"><span class="etiquette">enregistreur</span><span class="etiquette">playout</span><span class="etiquette">secours</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://shop.tekobroadcast.com/2167-medium_default/blackmagic-design-hyperdeck-studio-hd-mini.jpg" alt="Photo — HyperDeck Studio Mini"/></figure>
+
+<h2>HyperDeck Studio Mini</h2>
+<p class="sous">Blackmagic Design</p>
+<div><span class="pastille">enregistreur</span><span class="pastille">playout</span><span class="pastille">secours</span></div>
+<table class="caracts"><tbody>
+<tr><th>Vidéo</th><td>SDI 6G I/O, HDMI</td></tr>
+<tr><th>Audio</th><td>AES/analogiques</td></tr>
+<tr><th>Support</th><td>Cartes SD</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Enregistre les flux PGM/ISO et relit des habillages/PA. Format compact pour la baie technique. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjG_ZnUqeqPAxXgNfsDHTJmJJYQFnoECBYQAQ&amp;url=https%3A%2F%2Fdocuments.blackmagicdesign.com%2FUserManuals%2FHyperDeckManual.pdf&amp;usg=AOvVaw1Xjd-1qG3LfSLmX8F97Mv1&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- AJA Io IP -->
+<button aria-pressed="false" class="carte" data-id="aja-io-ip" type="button">
+<div class="ligne-carte">
+<div class="avatar">A</div>
+<div class="grandit">
+<h4 class="titre">AJA Io IP</h4>
+<div class="soustitre">Passerelle IP</div>
+<div class="etiquettes"><span class="etiquette">ip</span><span class="etiquette">st2110</span><span class="etiquette">passerelle</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://i.ebayimg.com/images/g/JWAAAOSwUU9i5pl1/s-l1200.jpg" alt="Photo — AJA Io IP"/></figure>
+
+<h2>AJA Io IP</h2>
+<p class="sous">Interface régie ↔ IP</p>
+<div><span class="pastille">ip</span><span class="pastille">st2110</span><span class="pastille">passerelle</span></div>
+<table class="caracts"><tbody>
+<tr><th>Standards</th><td>SMPTE 2022/2110</td></tr>
+<tr><th>I/O</th><td>Audio/Vidéo sur IP</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Convertit des signaux SDI/HDMI vers IP et inversement pour intégrer la régie dans un réseau de production IP. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjw7LzkquqPAxViTaQEHRJFL7oQFnoECCEQAQ&amp;url=https%3A%2F%2Fwww.aja.com%2Fassets%2Fsupport%2Ffiles%2F8098%2Fen%2FAJA_Manual_Io-IP_v16.0r1.pdf&amp;usg=AOvVaw1u73Ld_f6TxSyJfxZ9tx7k&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- AJA Hi5-4K-Plus -->
+<button aria-pressed="false" class="carte" data-id="aja-hi5-4k-plus" type="button">
+<div class="ligne-carte">
+<div class="avatar">A</div>
+<div class="grandit">
+<h4 class="titre">AJA Hi5-4K-Plus</h4>
+<div class="soustitre">SDI → HDMI 2.0</div>
+<div class="etiquettes"><span class="etiquette">convertisseur</span><span class="etiquette">4K</span><span class="etiquette">HDMI</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://www.atreid.com/miniatures/im/o/h/hi5-4k-plus-650-400.png" alt="Photo — AJA Hi5-4K-Plus"/></figure>
+
+<h2>AJA Hi5-4K-Plus</h2>
+<p class="sous">Convertisseur SDI vers HDMI</p>
+<div><span class="pastille">convertisseur</span><span class="pastille">4K</span><span class="pastille">HDMI</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>4× 3G-SDI (quad) ou 12G-SDI</td></tr>
+<tr><th>Sortie</th><td>HDMI 2.0</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Affiche un flux 4K SDI (quad-link ou 12G) sur un moniteur HDMI 2.0.</p>
+</div>
+</article>
+</button>
+<!-- Tektronix WFM-1600R -->
+<button aria-pressed="false" class="carte" data-id="tektronix-wfm-1600r" type="button">
+<div class="ligne-carte">
+<div class="avatar">T</div>
+<div class="grandit">
+<h4 class="titre">Tektronix WTM 5000</h4>
+<div class="soustitre">Waveform / Vectorscope</div>
+<div class="etiquettes"><span class="etiquette">waveform</span><span class="etiquette">vectorscope</span><span class="etiquette">analyse</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="data:image/jpeg;base64,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" alt="Photo — Tektronix WFM-1600R"/></figure>
+
+<h2>Tektronix WTM 5000</h2>
+<p class="sous">Analyse SDI</p>
+<div><span class="pastille">waveform</span><span class="pastille">vectorscope</span><span class="pastille">analyse</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>SD/HD/3G-SDI</td></tr>
+<tr><th>Sorties</th><td>Boucle SDI</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Mesure la luminance, la chroma et la synchronisation pour caler exposition, gamut et conformité broadcast.</p>
+</div>
+</article>
+</button>
+<!-- Telestream SPG700 -->
+<button aria-pressed="false" class="carte" data-id="telestream-spg700" type="button">
+<div class="ligne-carte">
+<div class="avatar">T</div>
+<div class="grandit">
+<h4 class="titre">Telestream SPG700</h4>
+<div class="soustitre">Générateur de synchro</div>
+<div class="etiquettes"><span class="etiquette">générateur de synchro</span><span class="etiquette">référence</span><span class="etiquette">clock</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://shop.cnrood.com/media/catalog/product/p/h/photo_spg700-multiformat-reference-sync-generator-front_and_back_view_2.png" alt="Photo — Telestream SPG700"/></figure>
+
+<h2>Telestream SPG700</h2>
+<p class="sous">Référence vidéo/clock</p>
+<div><span class="pastille">générateur de synchro</span><span class="pastille">référence</span><span class="pastille">clock</span></div>
+<table class="caracts"><tbody>
+<tr><th>Sorties</th><td>Black burst, Tri-level, 3G/HD/SD</td></tr>
+<tr><th>Référence externe</th><td>Oui</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Fournit la référence commune de timing pour éviter les sauts/accroches lors des commutations. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwj2va_Lq-qPAxUiR6QEHblbEJ4QFnoECBcQAQ&amp;url=https%3A%2F%2Fwww.telestream.net%2Fpdfs%2Fdatasheets%2FSPG700-Multiformat-Reference-Sync-Generator-Datasheet-D00013333A.pdf&amp;usg=AOvVaw00rYK5FqPklov_zArs64t1&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+<!-- Sony HD CCU -->
+<button aria-pressed="false" class="carte" data-id="sony-hd-ccu" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony HXCU-D70 Camera Control Unit</h4>
+<div class="soustitre">Unité de contrôle caméra</div>
+<div class="etiquettes"><span class="etiquette">ccu</span><span class="etiquette">caméra</span><span class="etiquette">plateau</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://www.digibroadcast.com/images/products/zoom/1449664479-05719700.jpg" alt="Photo — Sony HD CCU"/></figure>
+
+<h2>Sony HXCU-D70 Camera Control Unit</h2>
+<p class="sous">Unité de contrôle</p>
+<div><span class="pastille">ccu</span><span class="pastille">caméra</span><span class="pastille">plateau</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrée</th><td>Fibre caméra</td></tr>
+<tr><th>Sorties</th><td>SDI PGM/Preview, tally, intercom</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Alimente et pilote la caméra studio (peaking, iris, gain) et retourne les signaux vers la régie avec intercom/tally. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwiugorfq-qPAxXNUaQEHfs6EpwQFnoECCAQAQ&amp;url=https%3A%2F%2Fpro.sony%2Fs3%2F2019%2F01%2F23082002%2F4291688231.pdf&amp;usg=AOvVaw3ErBlM8uN7IVY674baA7Ng&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div>
+</article>
+</button>
+</div>
+</div>
+<!-- RESEAU -->
+<div aria-label="Réseau — Liste" class="section-categorie masqué" data-cat="reseau" data-espace="regie-verte" role="region">
+<div class="cartes">
+<button aria-pressed="false" class="carte" data-id="netgear-prosafe-jgs516pe" type="button">
+<div class="ligne-carte">
+<div class="avatar">N</div>
+<div class="grandit">
+<h4 class="titre">Netgear ProSAFE JGS516PE</h4>
+<div class="soustitre">Switch administrable</div>
+<div class="etiquettes"><span class="etiquette">switch</span><span class="etiquette">poe</span><span class="etiquette">réseau régie</span></div>
+</div>
+</div>
+<article class="detail masqué">
+<div class="detail">
+      <figure class="media-photo"><img src="https://www.netgear.com/support/cloudimage/1/69/123384" alt="Photo — Netgear ProSAFE JGS516PE"/></figure>
+
+<h2>Netgear ProSAFE JGS516PE</h2>
+<p class="sous">Switch 16 ports</p>
+<div><span class="pastille">switch</span><span class="pastille">poe</span><span class="pastille">réseau régie</span></div>
+<table class="caracts"><tbody>
+<tr><th>Ports</th><td>16× 1G (dont 8 PoE)</td></tr>
+<tr><th>Gestion</th><td>Administrable</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Relie l’ensemble des équipements IP (contrôle, VSM, interphonie IP, tally IP) et alimente certains périphériques via PoE. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwiEpdGTrOqPAxVGK_sDHTaiFEsQFnoECBYQAQ&amp;url=https%3A%2F%2Fwww.downloads.netgear.com%2Ffiles%2FGDC%2FJGS516PE%2FJGS516PE_JGS524PE_IG_EN.pdf&amp;usg=AOvVaw3og-M3IMOwbT6mbwIM7uEZ&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+<p class="notes"><strong>Notes :</strong> Usage typique en réseau interne de régie.</p>
+</div>
+</article>
+</button>
+</div>
+</div>
+<!-- MONITORING -->
+<div aria-label="Monitoring — Liste" class="section-categorie masqué" data-cat="monitoring" data-espace="regie-verte" role="region">
+<div class="cartes">
+<button aria-pressed="false" class="carte" data-id="lawo-vsm" type="button">
+<div class="ligne-carte">
+<div class="avatar">L</div>
+<div class="grandit">
+<h4 class="titre">Lawo VSM</h4>
+<div class="soustitre">Supervision / Contrôle centralisé</div>
+<div class="etiquettes"><span class="etiquette">supervision</span><span class="etiquette">contrôle centralisé</span><span class="etiquette">routing</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://docs.lawo.com/files/97814976/97814994/1/1682516235000/LAWO_VSM_LBP_34_PNG-8.png" alt="Photo — Lawo VSM"/></figure>
+
+<h2>Lawo VSM</h2>
+<p class="sous">Contrôle IP des équipements connectés</p>
+<div><span class="pastille">supervision</span><span class="pastille">contrôle centralisé</span><span class="pastille">routing</span></div>
+<table class="caracts"><tbody>
+<tr><th>Contrôle</th><td>IP sur équipements connectés</td></tr>
+<tr><th>Fonctions</th><td>Routing, monitoring, tally</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Pilote et supervise à distance matrices, multiviewers, intercoms et signaux, via interfaces logicielles.</p>
+<p class="notes"><strong>Notes :</strong> Solution logicielle/serveur, pas forcément un boîtier unique. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwi9lcW4rOqPAxWoVaQEHXX4DNAQFnoECCEQAQ&amp;url=https%3A%2F%2Flawo.com%2FDownloadery%2F80_Control%2FVSM%2FBrochures%2FLawo_VSM_EN.pdf&amp;usg=AOvVaw08pGRCmnKaajWVPJmSL3V-&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="hp-elitedesk" type="button">
+<div class="ligne-carte">
+<div class="avatar">H</div>
+<div class="grandit">
+<h4 class="titre">HP EliteDesk</h4>
+<div class="soustitre">Station / Automatisation</div>
+<div class="etiquettes"><span class="etiquette">station</span><span class="etiquette">automation</span><span class="etiquette">gestion</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=HP EliteDesk" alt="Photo — HP EliteDesk"/></figure>
+
+<h2>HP EliteDesk</h2>
+<p class="sous">PC de contrôle</p>
+<div><span class="pastille">station</span><span class="pastille">automation</span><span class="pastille">gestion</span></div>
+<table class="caracts"><tbody><tr><th>I/O</th><td>USB, Ethernet, HDMI/DP</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Machine dédiée aux logiciels de contrôle/automation, supervision ou diffusion d’assets. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjB3eD4rOqPAxWwUqQEHfY8FHoQFnoECBcQAQ&amp;url=https%3A%2F%2Fh10032.www1.hp.com%2Fctg%2FManual%2Fc03803202.pdf&amp;usg=AOvVaw2fUvI7AuAP7rIywEJwomnK&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="hp-z400" type="button">
+<div class="ligne-carte">
+<div class="avatar">H</div>
+<div class="grandit">
+<h4 class="titre">HP Z400</h4>
+<div class="soustitre">Workstation / Traitement média</div>
+<div class="etiquettes"><span class="etiquette">workstation</span><span class="etiquette">traitement média</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=HP Z400" alt="Photo — HP Z400"/></figure>
+
+<h2>HP Z400</h2>
+<p class="sous">Station de travail</p>
+<div><span class="pastille">workstation</span><span class="pastille">traitement média</span></div>
+<table class="caracts"><tbody><tr><th>I/O</th><td>USB, Ethernet, HDMI/DP</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Postes puissants pour encodage, transcodage, contrôle graphique ou serveurs locaux. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjx2KjmreqPAxVVAvsDHWFLFUcQFnoECBkQAQ&amp;url=https%3A%2F%2Fh10032.www1.hp.com%2Fctg%2FManual%2Fc01706256.pdf&amp;usg=AOvVaw1LHltfE03UO5Ft_RNRZcFs&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="sony-pws-1100" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Sony PWS-1100</h4>
+<div class="soustitre">Serveur passerelle / traitement</div>
+<div class="etiquettes"><span class="etiquette">serveur</span><span class="etiquette">ip</span><span class="etiquette">production</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Sony PWS-1100" alt="Photo — Sony PWS-1100"/></figure>
+
+<h2>Sony PWS-1100</h2>
+<p class="sous">Serveur de production</p>
+<div><span class="pastille">serveur</span><span class="pastille">ip</span><span class="pastille">production</span></div>
+<table class="caracts"><tbody><tr><th>I/O</th><td>IP/SDI selon configuration</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Nodal de traitement/ingest/échange entre environnements SDI et IP selon les cartes installées. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjoxq2EruqPAxWqVaQEHbUXNwoQFnoECBYQAQ&amp;url=https%3A%2F%2Fwww.sony.com%2Felectronics%2Fsupport%2Fres%2Fmanuals%2F4596%2Fd3242d0c090021c828f0876f56f3da5f%2F45969900M.pdf&amp;usg=AOvVaw00E4XkCOtZNoKweOjhJUyQ&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+</div>
+</div>
+<!-- CABLERIE -->
+<div aria-label="Câblerie — Liste" class="section-categorie masqué" data-cat="cablerie" data-espace="regie-verte" role="region">
+<div class="cartes">
+<button aria-pressed="false" class="carte" data-id="fibre-optique-ccu" type="button">
+<div class="ligne-carte">
+<div class="avatar">F</div>
+<div class="grandit">
+<h4 class="titre">Fibre optique (CCU ↔ caméras)</h4>
+<div class="soustitre">Liaison caméra</div>
+<div class="etiquettes"><span class="etiquette">fibre</span><span class="etiquette">caméra</span><span class="etiquette">ccu</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Fibre optique (CCU ↔ caméras)" alt="Photo — Fibre optique (CCU ↔ caméras)"/></figure>
+
+<h2>Fibre optique (CCU ↔ caméras)</h2>
+<div><span class="pastille">fibre</span><span class="pastille">caméra</span><span class="pastille">ccu</span></div>
+<table class="caracts"><tbody>
+<tr><th>Usage</th><td>Liaison caméra studio longue distance</td></tr>
+<tr><th>Type</th><td>Fibre (alimentation/signal via CCU)</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Transporte vidéo, intercom, tally et parfois alimentation entre plateau et CCU.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="sdi-12g" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">SDI / 12G-SDI</h4>
+<div class="soustitre">Liaison vidéo interne</div>
+<div class="etiquettes"><span class="etiquette">sdi</span><span class="etiquette">12g</span><span class="etiquette">vidéo</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=SDI / 12G-SDI" alt="Photo — SDI / 12G-SDI"/></figure>
+
+<h2>SDI / 12G-SDI</h2>
+<div><span class="pastille">sdi</span><span class="pastille">12g</span><span class="pastille">vidéo</span></div>
+<table class="caracts"><tbody>
+<tr><th>Usage</th><td>Liaisons vidéo professionnelles</td></tr>
+<tr><th>Formats</th><td>SD/HD/3G/12G</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Standard broadcast fiable, faible latence, verrouillage en timing centralisé. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwiopYWZruqPAxXlVKQEHbSvCikQFnoECBgQAQ&amp;url=https%3A%2F%2Fwww.aja.com%2Fpdf%2F2020%2FCore_Insights_Advances_In_12G_SDI.pdf&amp;usg=AOvVaw0P84XjdTTZxu9l3gKlIuSo&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="xlr-aes" type="button">
+<div class="ligne-carte">
+<div class="avatar">X</div>
+<div class="grandit">
+<h4 class="titre">XLR / AES</h4>
+<div class="soustitre">Liaisons audio pro</div>
+<div class="etiquettes"><span class="etiquette">audio</span><span class="etiquette">xlr</span><span class="etiquette">aes</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=XLR / AES" alt="Photo — XLR / AES"/></figure>
+
+<h2>XLR / AES</h2>
+<div><span class="pastille">audio</span><span class="pastille">xlr</span><span class="pastille">aes</span></div>
+<table class="caracts"><tbody>
+<tr><th>Usage</th><td>Transport analogique pro &amp; AES/EBU</td></tr>
+<tr><th>Caractéristiques</th><td>Symétrique, robuste et blindé</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Connectique standard pour micros, retours et liaisons numériques AES entre appareils.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="hdmi" type="button">
+<div class="ligne-carte">
+<div class="avatar">H</div>
+<div class="grandit">
+<h4 class="titre">HDMI</h4>
+<div class="soustitre">Monitoring local</div>
+<div class="etiquettes"><span class="etiquette">hdmi</span><span class="etiquette">monitoring</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=HDMI" alt="Photo — HDMI"/></figure>
+
+<h2>HDMI</h2>
+<div><span class="pastille">hdmi</span><span class="pastille">monitoring</span></div>
+<table class="caracts"><tbody>
+<tr><th>Usage</th><td>Écrans locaux/consommateur</td></tr>
+<tr><th>Compatibilité</th><td>HD/4K selon versions</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Pratique sur moniteurs grand public proches de la régie via convertisseurs SDI↔HDMI.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="patch-panels" type="button">
+<div class="ligne-carte">
+<div class="avatar">P</div>
+<div class="grandit">
+<h4 class="titre">Patch panels (baie technique)</h4>
+<div class="soustitre">Redirection / Baie</div>
+<div class="etiquettes"><span class="etiquette">patch</span><span class="etiquette">baie</span><span class="etiquette">routing</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Patch panels (baie technique)" alt="Photo — Patch panels (baie technique)"/></figure>
+
+<h2>Patch panels (baie technique)</h2>
+<div><span class="pastille">patch</span><span class="pastille">baie</span><span class="pastille">routing</span></div>
+<table class="caracts"><tbody>
+<tr><th>Usage</th><td>Redirection des signaux (SDI/XLR/éthernet)</td></tr>
+<tr><th>Montage</th><td>Baie 19″</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Facilite les reconfigurations et dépannages sans démonter la baie.</p>
+</div></article>
+</button>
+</div>
+</div>
+<!-- ACCESSOIRES -->
+<div aria-label="Accessoires — Liste" class="section-categorie masqué" data-cat="accessoires" data-espace="regie-verte" role="region">
+<div class="cartes">
+<button aria-pressed="false" class="carte" data-id="hp-usb-slim-keyboard" type="button">
+<div class="ligne-carte">
+<div class="avatar">H</div>
+<div class="grandit">
+<h4 class="titre">HP USB Slim Keyboard</h4>
+<div class="soustitre">Clavier opérateur</div>
+<div class="etiquettes"><span class="etiquette">clavier</span><span class="etiquette">usb</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="data:image/jpeg;base64,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" alt="Photo — HP USB Slim Keyboard"/></figure>
+
+<h2>HP USB Slim Keyboard</h2>
+<div><span class="pastille">clavier</span><span class="pastille">usb</span></div>
+<table class="caracts"><tbody><tr><th>Type</th><td>Clavier opérateur</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Entrées clavier fiables pour serveurs, automation et machines de pilotage. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwiDyoTLruqPAxU0TaQEHTEFE-QQFnoECBcQAQ&amp;url=https%3A%2F%2Fh20195.www2.hp.com%2Fv2%2Fgetpdf.aspx%2Fc05389400.pdf&amp;usg=AOvVaw32yTrmHWkXG9HZHX4oMq7c&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="kit-micro-hf-digicom-pro" type="button">
+<div class="ligne-carte">
+<div class="avatar">K</div>
+<div class="grandit">
+<h4 class="titre">Kit micro HF Digicom Pro</h4>
+<div class="soustitre">Micro HF</div>
+<div class="etiquettes"><span class="etiquette">micro</span><span class="etiquette">hf</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Kit micro HF Digicom Pro" alt="Photo — Kit micro HF Digicom Pro"/></figure>
+
+<h2>Kit micro HF Digicom Pro</h2>
+<div><span class="pastille">micro</span><span class="pastille">hf</span></div>
+<table class="caracts"><tbody><tr><th>Type</th><td>Liaison sans fil UHF/2,4 GHz (selon modèle)</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Sonorise présentateurs/invités sans câble, via récepteurs en régie.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="logitech-hd-usb" type="button">
+<div class="ligne-carte">
+<div class="avatar">L</div>
+<div class="grandit">
+<h4 class="titre">Logitech HD (USB)</h4>
+<div class="soustitre">Webcam / USB</div>
+<div class="etiquettes"><span class="etiquette">webcam</span><span class="etiquette">usb</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Logitech HD (USB)" alt="Photo — Logitech HD (USB)"/></figure>
+
+<h2>Logitech HD (USB)</h2>
+<div><span class="pastille">webcam</span><span class="pastille">usb</span></div>
+<table class="caracts"><tbody><tr><th>Type</th><td>Caméra USB pour retours visio/monitoring</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Utilitaire pour retours, streaming secondaire ou contrôle distant. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwj3q8-jr-qPAxWLUqQEHahWJoAQFnoECBcQAQ&amp;url=https%3A%2F%2Fdocs.rs-online.com%2Ffb8a%2F0900766b8154c932.pdf&amp;usg=AOvVaw3OIIGOICPkXIqyZ_P58q1p&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="telecommande-lumiere-ma" type="button">
+<div class="ligne-carte">
+<div class="avatar">T</div>
+<div class="grandit">
+<h4 class="titre">Télécommande lumière (MA Lighting)</h4>
+<div class="soustitre">DMX / ArtNet</div>
+<div class="etiquettes"><span class="etiquette">lumière</span><span class="etiquette">dmx</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Télécommande lumière (MA Lighting)" alt="Photo — Télécommande lumière (MA Lighting)"/></figure>
+
+<h2>Télécommande lumière (MA Lighting)</h2>
+<div><span class="pastille">lumière</span><span class="pastille">dmx</span></div>
+<table class="caracts"><tbody>
+<tr><th>Protocoles</th><td>DMX/ArtNet</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Pilote des projecteurs et régies lumière depuis la régie technique.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="ecrans-retour-sony" type="button">
+<div class="ligne-carte">
+<div class="avatar">S</div>
+<div class="grandit">
+<h4 class="titre">Écrans de retour plateau (Sony)</h4>
+<div class="soustitre">HDMI / SDI via conv.</div>
+<div class="etiquettes"><span class="etiquette">retour</span><span class="etiquette">écran</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Écrans de retour plateau (Sony)" alt="Photo — Écrans de retour plateau (Sony)"/></figure>
+
+<h2>Écrans de retour plateau (Sony)</h2>
+<div><span class="pastille">retour</span><span class="pastille">écran</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>HDMI / SDI via convertisseur</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Permet aux intervenants de voir le PGM, un prompteur ou des décomptes.</p>
+</div></article>
+</button>
+</div>
+</div>
+<!-- PLATEAU -->
+<div aria-label="Plateau — Liste" class="section-categorie masqué" data-cat="plateau" data-espace="regie-verte" role="region">
+<div class="cartes">
+<button aria-pressed="false" class="carte" data-id="cameras-sony-x4" type="button">
+<div class="ligne-carte">
+<div class="avatar">C</div>
+<div class="grandit">
+<h4 class="titre">Caméra Sony HQXD70R</h4>
+<div class="soustitre">Fibre → CCU</div>
+<div class="etiquettes"><span class="etiquette">caméras</span><span class="etiquette">plateau</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Caméras Sony (x4)" alt="Photo — Caméras Sony (x4)"/></figure>
+
+<h2>Caméra Sony HQXD70R</h2>
+<div><span class="pastille">caméras</span><span class="pastille">plateau</span></div>
+<table class="caracts"><tbody><tr><th>Liaison</th><td>Fibre → CCU</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Prise de vues studio reliée en fibre à la régie : alimentation, intercom, tally et vidéo transitent ensemble.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="projecteurs-arri-x26" type="button">
+<div class="ligne-carte">
+<div class="avatar">P</div>
+<div class="grandit">
+<h4 class="titre">Projecteurs ARRI (x26)</h4>
+<div class="soustitre">Secteur / DMX</div>
+<div class="etiquettes"><span class="etiquette">éclairage</span><span class="etiquette">arri</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Projecteurs ARRI (x26)" alt="Photo — Projecteurs ARRI (x26)"/></figure>
+
+<h2>Projecteurs ARRI (x26)</h2>
+<div><span class="pastille">éclairage</span><span class="pastille">arri</span></div>
+<table class="caracts"><tbody>
+<tr><th>Alimentation</th><td>Secteur</td></tr>
+<tr><th>Contrôle</th><td>DMX</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Éclaire le plateau avec des sources cinéma/TV de haute qualité, contrôlées en DMX.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="televiseurs-sony-x2" type="button">
+<div class="ligne-carte">
+<div class="avatar">T</div>
+<div class="grandit">
+<h4 class="titre">Téléviseurs Sony (x2)</h4>
+<div class="soustitre">HDMI / SDI via conv.</div>
+<div class="etiquettes"><span class="etiquette">retour</span><span class="etiquette">écran</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Téléviseurs Sony (x2)" alt="Photo — Téléviseurs Sony (x2)"/></figure>
+
+<h2>Téléviseurs Sony (x2)</h2>
+<div><span class="pastille">retour</span><span class="pastille">écran</span></div>
+<table class="caracts"><tbody><tr><th>Entrées</th><td>HDMI / SDI via convertisseur</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Moniteurs retour pour le public, le plateau ou le contrôle décor.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="enceintes-ma120-mkii-ampli" type="button">
+<div class="ligne-carte">
+<div class="avatar">E</div>
+<div class="grandit">
+<h4 class="titre">Enceintes MA120 MKII + ampli</h4>
+<div class="soustitre">Retour son</div>
+<div class="etiquettes"><span class="etiquette">audio</span><span class="etiquette">retour</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Enceintes MA120 MKII + ampli" alt="Photo — Enceintes MA120 MKII + ampli"/></figure>
+
+<h2>Enceintes MA120 MKII + ampli</h2>
+<div><span class="pastille">audio</span><span class="pastille">retour</span></div>
+<table class="caracts"><tbody>
+<tr><th>Entrées</th><td>XLR/Jack</td></tr>
+<tr><th>Usage</th><td>Retour son plateau</td></tr>
+</tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Diffuse le mix ou un retour spécifique pour les comédiens/animateurs. <a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=&amp;cad=rja&amp;uact=8&amp;ved=2ahUKEwjJhdrMr-qPAxUyK_sDHQ8yEaEQFnoECBgQAQ&amp;url=https%3A%2F%2Fimages.thomann.de%2Fpics%2Fprod%2F195950_manual_eng.pdf&amp;usg=AOvVaw35B4FTK4_5RzNT2XwZGXla&amp;opi=89978449" rel="noopener noreferrer" target="_blank">
+                En savoir plus sur le produit (documentation officielle)
+                </a></p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="micros-hf-filaires" type="button">
+<div class="ligne-carte">
+<div class="avatar">M</div>
+<div class="grandit">
+<h4 class="titre">Micros (x2 HF + x2 filaires)</h4>
+<div class="soustitre">XLR / HF → récepteurs régie</div>
+<div class="etiquettes"><span class="etiquette">micro</span><span class="etiquette">plateau</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Micros (x2 HF + x2 filaires)" alt="Photo — Micros (x2 HF + x2 filaires)"/></figure>
+
+<h2>Micros (x2 HF + x2 filaires)</h2>
+<div><span class="pastille">micro</span><span class="pastille">plateau</span></div>
+<table class="caracts"><tbody><tr><th>Connexions</th><td>XLR / HF → récepteurs régie</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Capture des voix sur le plateau avec ou sans fil, selon la mobilité souhaitée.</p>
+</div></article>
+</button>
+<button aria-pressed="false" class="carte" data-id="pupitre-lumiere-ma" type="button">
+<div class="ligne-carte">
+<div class="avatar">P</div>
+<div class="grandit">
+<h4 class="titre">Pupitre lumière (MA Lighting)</h4>
+<div class="soustitre">DMX / ArtNet</div>
+<div class="etiquettes"><span class="etiquette">lumière</span><span class="etiquette">contrôle</span></div>
+</div>
+</div>
+<article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=Pupitre lumière (MA Lighting)" alt="Photo — Pupitre lumière (MA Lighting)"/></figure>
+
+<h2>Pupitre lumière (MA Lighting)</h2>
+<div><span class="pastille">lumière</span><span class="pastille">contrôle</span></div>
+<table class="caracts"><tbody><tr><th>Protocoles</th><td>DMX/ArtNet</td></tr></tbody></table>
+<p class="description"><strong>À quoi ça sert ?</strong> Console principale de contrôle lumière pour créer des ambiances et mémoires.</p>
+</div></article>
+</button>
+</div>
+</div>
+<div aria-label="Audio — Liste (Régie bleue)" class="section-categorie masqué" data-cat="audio" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Video — Liste (Régie bleue)" class="section-categorie masqué" data-cat="video" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Reseau — Liste (Régie bleue)" class="section-categorie masqué" data-cat="reseau" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Monitoring — Liste (Régie bleue)" class="section-categorie masqué" data-cat="monitoring" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Cablerie — Liste (Régie bleue)" class="section-categorie masqué" data-cat="cablerie" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Accessoires — Liste (Régie bleue)" class="section-categorie masqué" data-cat="accessoires" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Plateau — Liste (Régie bleue)" class="section-categorie masqué" data-cat="plateau" data-espace="regie-bleue" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Ce matériel est à renseigner.</p></div></article></button></div></div><div aria-label="Audio — Liste (production)" class="section-categorie masqué" data-cat="audio" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Audio</p></div></article></button></div></div><div aria-label="Video — Liste (production)" class="section-categorie masqué" data-cat="video" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Video</p></div></article></button></div></div><div aria-label="Reseau — Liste (production)" class="section-categorie masqué" data-cat="reseau" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Reseau</p></div></article></button></div></div><div aria-label="Monitoring — Liste (production)" class="section-categorie masqué" data-cat="monitoring" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Monitoring</p></div></article></button></div></div><div aria-label="Cablerie — Liste (production)" class="section-categorie masqué" data-cat="cablerie" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Cablerie</p></div></article></button></div></div><div aria-label="Accessoires — Liste (production)" class="section-categorie masqué" data-cat="accessoires" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Accessoires</p></div></article></button></div></div><div aria-label="Plateau — Liste (production)" class="section-categorie masqué" data-cat="plateau" data-espace="production" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production — Plateau</p></div></article></button></div></div><div aria-label="Audio — Liste (production son)" class="section-categorie masqué" data-cat="audio" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Audio</p></div></article></button></div></div><div aria-label="Video — Liste (production son)" class="section-categorie masqué" data-cat="video" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Video</p></div></article></button></div></div><div aria-label="Reseau — Liste (production son)" class="section-categorie masqué" data-cat="reseau" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Reseau</p></div></article></button></div></div><div aria-label="Monitoring — Liste (production son)" class="section-categorie masqué" data-cat="monitoring" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Monitoring</p></div></article></button></div></div><div aria-label="Cablerie — Liste (production son)" class="section-categorie masqué" data-cat="cablerie" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Cablerie</p></div></article></button></div></div><div aria-label="Accessoires — Liste (production son)" class="section-categorie masqué" data-cat="accessoires" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Accessoires</p></div></article></button></div></div><div aria-label="Plateau — Liste (production son)" class="section-categorie masqué" data-cat="plateau" data-espace="production-son" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Production Son — Plateau</p></div></article></button></div></div><div aria-label="Audio — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="audio" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Audio</p></div></article></button></div></div><div aria-label="Video — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="video" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Video</p></div></article></button></div></div><div aria-label="Reseau — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="reseau" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Reseau</p></div></article></button></div></div><div aria-label="Monitoring — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="monitoring" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Monitoring</p></div></article></button></div></div><div aria-label="Cablerie — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="cablerie" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Cablerie</p></div></article></button></div></div><div aria-label="Accessoires — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="accessoires" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Accessoires</p></div></article></button></div></div><div aria-label="Plateau — Liste (magasin lumiere)" class="section-categorie masqué" data-cat="plateau" data-espace="magasin-lumiere" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Lumiere — Plateau</p></div></article></button></div></div><div aria-label="Audio — Liste (magasin audio)" class="section-categorie masqué" data-cat="audio" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Audio</p></div></article></button></div></div><div aria-label="Video — Liste (magasin audio)" class="section-categorie masqué" data-cat="video" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Video</p></div></article></button></div></div><div aria-label="Reseau — Liste (magasin audio)" class="section-categorie masqué" data-cat="reseau" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Reseau</p></div></article></button></div></div><div aria-label="Monitoring — Liste (magasin audio)" class="section-categorie masqué" data-cat="monitoring" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Monitoring</p></div></article></button></div></div><div aria-label="Cablerie — Liste (magasin audio)" class="section-categorie masqué" data-cat="cablerie" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Cablerie</p></div></article></button></div></div><div aria-label="Accessoires — Liste (magasin audio)" class="section-categorie masqué" data-cat="accessoires" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Accessoires</p></div></article></button></div></div><div aria-label="Plateau — Liste (magasin audio)" class="section-categorie masqué" data-cat="plateau" data-espace="magasin-audio" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Audio — Plateau</p></div></article></button></div></div><div aria-label="Audio — Liste (magasin video)" class="section-categorie masqué" data-cat="audio" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Audio</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Audio</p></div></article></button></div></div><div aria-label="Video — Liste (magasin video)" class="section-categorie masqué" data-cat="video" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">V</div><div class="grandit"><h4 class="titre">[Placeholder] Video</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Video</p></div></article></button></div></div><div aria-label="Reseau — Liste (magasin video)" class="section-categorie masqué" data-cat="reseau" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">R</div><div class="grandit"><h4 class="titre">[Placeholder] Reseau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Reseau</p></div></article></button></div></div><div aria-label="Monitoring — Liste (magasin video)" class="section-categorie masqué" data-cat="monitoring" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">M</div><div class="grandit"><h4 class="titre">[Placeholder] Monitoring</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Monitoring</p></div></article></button></div></div><div aria-label="Cablerie — Liste (magasin video)" class="section-categorie masqué" data-cat="cablerie" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">C</div><div class="grandit"><h4 class="titre">[Placeholder] Cablerie</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Cablerie</p></div></article></button></div></div><div aria-label="Accessoires — Liste (magasin video)" class="section-categorie masqué" data-cat="accessoires" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">A</div><div class="grandit"><h4 class="titre">[Placeholder] Accessoires</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Accessoires</p></div></article></button></div></div><div aria-label="Plateau — Liste (magasin video)" class="section-categorie masqué" data-cat="plateau" data-espace="magasin-video" role="region"><div class="cartes"><button aria-pressed="false" class="carte" type="button"><div class="ligne-carte"><div class="avatar">P</div><div class="grandit"><h4 class="titre">[Placeholder] Plateau</h4><div class="soustitre">À compléter</div><div class="etiquettes"><span class="etiquette">placeholder</span></div></div></div><article class="detail masqué"><div class="detail">
+      <figure class="media-photo"><img src="https://via.placeholder.com/800x450.png?text=[À compléter]" alt="Photo — [À compléter]"/></figure>
+<h2>[À compléter]</h2><p class="sous">Magasin Video — Plateau</p></div></article></button></div></div></section>
+<!-- =======================
+         Panneau droite : Détail
+         ======================= -->
+<aside aria-label="Fiche équipement" class="panneau panneau-detail" id="panneau-detail">
+<div class="attente" id="contenu-detail">Sélectionnez un équipement…</div>
+</aside>
+</main><footer>
+<details class="apropos">
+<summary>À propos de ce site (cliquez ici pour lire une belle histoire)</summary>
+<div class="contenu-apropos">
+<p>Ce site a pris environ neuf heures à être construit mais il reste imparfait malgré nos efforts : merci d’être tolérant·e avec nous.</p>
+<p>Un jour, Karim a croisé un verre de lait‑fraise très aimable et une bande de fraises Tagada un brin turbulentes.</p>
+<p>Nous avons alors monté l’opération <em>Mission Monnaert</em> : livrer ces douceurs à M. Monnaert, notre professeur, sans rien égarer en route.</p>
+<p>Le trajet fut digne d’un film d’action (moins les explosions) ; oui, nous avons goûté une ou deux friandises… pour le contrôle qualité.</p>
+<p>Au final, la livraison a bien été effectuée, et le sourire de M. Monnaert valait bien toutes ces péripéties.</p>
+<div class="licence-cc">
+<p><strong>Licence :</strong> Ce travail est sous licence
+            <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr" rel="license noopener" target="_blank">Creative Commons BY‑NC‑ND 4.0</a>
+            (attribution, non‑commercial, pas de modifications). Pour toute autre utilisation, merci de contacter M.HAMIDOU à l'adresse karim.hamidou200725@gmail.com</p>
+</div>
+<p class="credit">Site web développé avec 🤍 par Karim HAMIDOU et Théandre GOUBET — alimentés au lait‑fraise et aux fraises Tagada.</p>
+<p class="credit">Données cherchées par LEMAIRE Nolan, BERTRAND Steven, ALLAIN Gabriel, GOUBET Théandre et HAMIDOU Karim.</p>
+</div>
+</details>
+</footer></div>
+<script>
+    /* =====================================================
+       JS minimal — tout en français, avec ARIA et animations
+       ===================================================== */
+    (function(){
+      const $ = (sel, ctx=document)=>ctx.querySelector(sel);
+      const $$ = (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+
+
+      // ——— Gestion des espaces (landing / régies / magasins) ———
+      let espaceActif = 'regie-verte'; // par défaut
+      const $landing = document.getElementById('landing');
+      const $app = document.getElementById('app');
+      const $switch = document.getElementById('switch-espaces');
+      const $btnOpenSwitch = document.getElementById('btn-open-switch');
+      const $btnCloseSwitch = document.getElementById('btn-close-switch');
+      const $titreMarque = document.querySelector('.marque');
+
+      function setEspace(nom){
+        hideAllSections();
+        try{ location.hash = '#' + nom; }catch(e){}
+        espaceActif = nom;
+        // afficher l'appli et masquer le landing
+        if($landing) $landing.classList.add('masqué');
+        if($app) $app.classList.remove('masqué');
+        // maj sous-titre header
+        if($titreMarque){
+          $titreMarque.querySelector('b').textContent = ({'regie-verte':'Régie verte','regie-bleue':'Régie bleue','production':'Production','production-son':'Production son','magasin-lumiere':'Magasin lumière','magasin-audio':'Magasin audio','magasin-video':'Magasin vidéo'})[nom] || 'Régie';
+        }
+        // activer la catégorie visible actuelle (ou vidéo par défaut)
+        const actif = document.querySelector('.bouton-rubrique[aria-current="page"]') || document.querySelector('.bouton-rubrique[data-cat="video"]');
+        if(actif){
+          const cat = actif.dataset.cat;
+          basculeCategorie(cat, true);
+          appliquerFiltre();
+          afficheAttente();
+        }
+      }
+
+      function openSwitch(){ $switch?.classList.add('ouvert'); $switch?.setAttribute('aria-hidden', 'false'); openDropdown(); }
+      function closeSwitch(){ $switch?.classList.remove('ouvert'); $switch?.setAttribute('aria-hidden', 'true'); }
+
+      // Écouteurs overlay
+                  $btnCloseSwitch?.addEventListener('click', closeSwitch);
+      $switch?.addEventListener('click', (e)=>{ if(e.target === $switch) closeSwitch(); });
+
+      // Clics vers un espace (landing + overlay)
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-espace-target]');
+        if(!btn) return;
+        const cible = btn.getAttribute('data-espace-target');
+        if(!cible) return;
+        setEspace(cible);
+        closeDropdown();
+        closeSwitch();
+      });
+
+      // Permet deep-link via hash (#regie-verte, #regie-bleue)
+      if(location.hash){
+        const nom = location.hash.replace('#','');
+        const ok = ['regie-verte','regie-bleue','production','production-son','magasin-lumiere','magasin-audio','magasin-video'].includes(nom);
+        if(ok) setEspace(nom);
+      }
+
+      // sections selon espace actif
+      function getSections(){ return $$('.section-categorie[data-espace="'+espaceActif+'"]'); }
+      const boutonsRubrique = $$('.bouton-rubrique');
+      const zoneCentre = $('.centre');
+      const detail = $('#contenu-detail');
+
+      // ——— Recherche par nom ———
+      const champRecherche = $('#recherche-nom');
+      const messageRecherche = $('#etat-recherche');
+
+      function appliquerFiltre(){
+        const q = (champRecherche && champRecherche.value || '').trim().toLowerCase();
+        const sectionActive = $('.section-categorie[data-espace="'+espaceActif+'"]:not(.masqué)');
+        if(!sectionActive) return;
+        const cartes = $$('.carte', sectionActive);
+        let visibles = 0;
+        cartes.forEach(carte=>{
+          const titre = ($('.titre', carte)?.textContent || '').toLowerCase();
+          const sous = ($('.soustitre', carte)?.textContent || '').toLowerCase();
+          const ident = (carte.dataset.id || '').toLowerCase();
+          const ok = !q || titre.includes(q) || sous.includes(q) || ident.includes(q);
+          carte.classList.toggle('masqué', !ok);
+          if(ok) visibles++;
+        });
+        if(messageRecherche){
+          if(q && visibles === 0){
+            messageRecherche.textContent = 'Aucun résultat';
+            messageRecherche.classList.remove('masqué');
+          }else if(q){
+            messageRecherche.textContent = `${visibles} résultat${visibles>1?'s':''}`;
+            messageRecherche.classList.remove('masqué');
+          }else{
+            messageRecherche.classList.add('masqué');
+          }
+        }
+      }
+
+      champRecherche && champRecherche.addEventListener('input', appliquerFiltre);
+
+
+      // Ajoute une petite animation de fondu
+      function animeFondu(el){
+        if(!el) return;
+        el.classList.remove('anime-fondu'); // réarmement
+        // force le reflow pour relancer l’animation
+        void el.offsetWidth;
+        el.classList.add('anime-fondu');
+      }
+
+      // Réinitialise l’état sélectionné des cartes
+      function reinitialiseCartes(){
+        $$('.carte[aria-pressed="true"]').forEach(c=>c.setAttribute('aria-pressed','false'));
+      }
+
+      // Affiche le message d’attente dans le panneau de droite
+      function afficheAttente(){
+        detail.className = 'attente';
+        detail.textContent = 'Sélectionnez un équipement…';
+        animeFondu(detail);
+      }
+
+      // Bascule de catégorie avec masquage/affichage
+      function basculeCategorie(cat, silent){
+        getSections().forEach(sec=>{
+          const cible = (sec.dataset.cat === cat) && (sec.dataset.espace === espaceActif);
+          if(cible){
+            sec.classList.remove('masqué');
+            animeFondu(sec);
+          }else{
+            sec.classList.add('masqué');
+          }
+        });
+      }
+
+      // Gestion des clics sur rubriques
+      boutonsRubrique.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          // aria-current
+          boutonsRubrique.forEach(b=>b.removeAttribute('aria-current'));
+          btn.setAttribute('aria-current','page');
+
+          // montre la section correspondante
+          const cat = btn.dataset.cat;
+          basculeCategorie(cat);
+          appliquerFiltre();
+
+          // réinitialise la fiche et la sélection
+          reinitialiseCartes();
+          afficheAttente();
+          appliquerFiltre();
+
+          // place le focus accessibilité sur la première carte de la catégorie
+          const premiereCarte = $('.carte', $(`.section-categorie[data-cat="${cat}"]`));
+          if(premiereCarte) premiereCarte.focus({preventScroll:false});
+        });
+      });
+
+      // Délégation : clic sur une carte => copie le bloc <article.detail> vers le panneau de droite
+      zoneCentre.addEventListener('click', (e)=>{
+        const carte = e.target.closest('.carte');
+        if(!carte) return;
+
+        // ignore si section masquée (sécurité)
+        const sec = carte.closest('.section-categorie');
+        if(sec && sec.classList.contains('masqué')) return;
+
+        // sélection visuelle
+        reinitialiseCartes();
+        carte.setAttribute('aria-pressed','true');
+
+        const article = carte.querySelector('.detail');
+        if(article){
+          detail.className = 'detail';
+          detail.innerHTML = article.innerHTML;
+          animeFondu(detail);
+        }else{
+          afficheAttente();
+          appliquerFiltre();
+        }
+      });
+
+      // Initialisation : catégorie "vidéo" active sans animer le scroll
+      (function init(){
+        const actif = $('.bouton-rubrique[aria-current="page"]') || $('.bouton-rubrique[data-cat="video"]');
+        if(actif){
+          boutonsRubrique.forEach(b=>b.removeAttribute('aria-current'));
+          actif.setAttribute('aria-current','page');
+          const cat = actif.dataset.cat;
+          basculeCategorie(cat);
+          appliquerFiltre();
+          afficheAttente();
+          appliquerFiltre();
+        }
+      })();
+    })();
+  
+      // Dropdown ancré au bouton "Espaces ▾"
+      const $dd = document.getElementById('dd-espaces');
+      function openDropdown(){
+        $dd?.classList.add('ouvert'); $dd?.setAttribute('aria-hidden','false');
+      }
+      function closeDropdown(){
+        $dd?.classList.remove('ouvert'); $dd?.setAttribute('aria-hidden','true');
+      }
+      $btnOpenSwitch?.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); if($dd?.classList.contains('ouvert')) closeDropdown(); else openDropdown(); });
+      document.addEventListener('click', (e)=>{ if(!e.target.closest('.header-actions')) closeDropdown(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDropdown(); });
+      function closeDropdownOnPageClick(e){
+        if(!$dd) return;
+        const inHeader = e.target.closest && e.target.closest('.header-actions');
+        if(!inHeader && $dd.classList.contains('ouvert')) closeDropdown();
+      }
+      document.addEventListener('click', closeDropdownOnPageClick, true);
+    
+
+      // Quand on change d'espace via dropdown ou landing/overlay
+      function hideAllSections(){
+        document.querySelectorAll('.section-categorie').forEach(sec=>sec.classList.add('masqué'));
+      }
+</script>
+<div aria-hidden="true" class="switch-espaces" id="switch-espaces"><div class="switch-panel anime-fondu"><div class="switch-header"><div class="switch-title">Changer d’espace</div><button class="switch-close" id="btn-close-switch" type="button">Fermer</button></div><div class="switch-grid"><button class="switch-item" data-espace-target="regie-verte" type="button"><span class="emoji">🎛️</span> Régie verte</button><button class="switch-item" data-espace-target="regie-bleue" type="button"><span class="emoji">🎚️</span> Régie bleue</button><button class="switch-item" data-espace-target="production" type="button"><span class="emoji">🎬</span> Production</button><button class="switch-item" data-espace-target="production-son" type="button"><span class="emoji">🎤</span> Production son</button><button class="switch-item" data-espace-target="magasin-lumiere" type="button"><span class="emoji">💡</span> Magasin lumière</button><button class="switch-item" data-espace-target="magasin-audio" type="button"><span class="emoji">🔊</span> Magasin audio</button><button class="switch-item" data-espace-target="magasin-video" type="button"><span class="emoji">📺</span> Magasin vidéo</button></div></div></div>
+<script>
+(function(){
+  function gotoLanding(){
+    try { location.hash = '#landing'; } catch(e){}
+    const landing = document.getElementById('landing');
+    const app = document.getElementById('app');
+    if(landing){ landing.classList.remove('masqué'); landing.scrollIntoView({behavior:'smooth'}); }
+    if(app){ app.classList.add('masqué'); }
+  }
+  const homes = document.querySelectorAll('#btn-home');
+  homes.forEach(btn => btn.addEventListener('click', gotoLanding));
+})();
+</script>
+
+
+<script>
+(function(){
+  function extractYTId(input){
+    if(!input) return null;
+    var s = String(input).trim();
+    if(/^[a-zA-Z0-9_-]{10,}$/.test(s) && s.indexOf('http')!==0) return s;
+    var m = s.match(/[?&]v=([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+    m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+    m = s.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+    m = s.match(/([a-zA-Z0-9_-]{11})(?:[^a-zA-Z0-9_-]|$)/);
+    return m ? m[1] : null;
+  }
+  function mountYT(el){
+    var raw = el.getAttribute('data-yt');
+    var id = extractYTId(raw);
+    if(!id){ el.innerHTML = '<div style="color:#fff;padding:12px;text-align:center">ID YouTube invalide</div>'; return; }
+    var src = 'https://www.youtube.com/embed/'+id+'?rel=0';
+    var ifr = document.createElement('iframe');
+    ifr.setAttribute('src', src);
+    ifr.setAttribute('title', 'YouTube video');
+    ifr.setAttribute('loading', 'lazy');
+    ifr.setAttribute('allowfullscreen', '');
+    ifr.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    ifr.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+    el.innerHTML = '';
+    el.appendChild(ifr);
+  }
+  function initYT(){
+    document.querySelectorAll('.yt-embed').forEach(mountYT);
+  }
+  function cleanupLanding(){
+    document.querySelectorAll('.btn-espace, .landing-grid, .landing-wrap').forEach(function(el){
+      if(!el.closest('#landing')) el.remove();
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function(){ initYT(); cleanupLanding(); });
+  window.addEventListener('hashchange', function(){ setTimeout(initYT, 0); setTimeout(cleanupLanding, 0); });
+  document.addEventListener('click', function(e){
+    if(e.target.closest('[data-espace-target]') || e.target.closest('.bouton-rubrique')){
+      setTimeout(initYT, 0);
+      setTimeout(cleanupLanding, 0);
+    }
+  }, true);
+})();
+</script>
+
+</body>
+</html>
